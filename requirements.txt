@@ -1,4 +1,5 @@
 streamlit
 pyttsx3
-numpy
-opencv-python
+SpeechRecognition
+llama-cpp-python
+pyaudio
