@@ -1,6 +1,9 @@
+import streamlit as st
 import pyttsx3
 import speech_recognition as sr
 from llama_cpp import Llama
+import tempfile
+import os
 
 # === INITIALIZATION ===
 engine = pyttsx3.init()
@@ -8,16 +11,21 @@ engine.setProperty('rate', 180)
 recognizer = sr.Recognizer()
 
 # === LOAD MODEL (OPTIMIZED THREADS AND SETTINGS) ===
-print("🔄 Loading your AI model...")
-llm = Llama(
-    model_path="model.gguf",  # Update this to your correct model path
-    n_ctx=1024,
-    n_threads=8,
-    n_gpu_layers=20,
-    f16_kv=True,
-    verbose=False
-)
-print("✅ Model loaded successfully!")
+@st.cache_resource
+def load_model():
+    st.write("🔄 Loading your AI model...")
+    model = Llama(
+        model_path="model.gguf",  # Update this to your correct model path
+        n_ctx=1024,
+        n_threads=8,
+        n_gpu_layers=20,
+        f16_kv=True,
+        verbose=False
+    )
+    st.write("✅ Model loaded successfully!")
+    return model
+
+llm = load_model()
 
 # === CHARACTER STYLES ===
 characters = {
@@ -33,27 +41,21 @@ input_mode = "text"  # default mode
 
 # === SPEAK FUNCTION ===
 def speak(text):
-    print(f"\n🤖: {text}")
-    engine.say(text)
-    engine.runAndWait()
+    st.write(f"🤖: {text}")
+    try:
+        engine.say(text)
+        engine.runAndWait()
+    except:
+        st.warning("Speech output not supported in this environment.")
 
 # === GET TEXT INPUT ===
 def get_text_input():
-    return input("\nYou: ").strip()
+    return st.text_input("💬 You:", "").strip()
 
 # === GET VOICE INPUT ===
 def get_voice_input():
-    with sr.Microphone() as source:
-        print("🎤 Listening...")
-        audio = recognizer.listen(source)
-    try:
-        return recognizer.recognize_google(audio)
-    except sr.UnknownValueError:
-        speak("Sorry, I didn't catch that.")
-        return ""
-    except sr.RequestError as e:
-        speak("Sorry, speech service is down.")
-        return ""
+    st.warning("Voice input requires local microphone access and won't work on Streamlit Cloud.")
+    return ""
 
 # === GENERATE RESPONSE ===
 def generate_response(question):
@@ -69,66 +71,39 @@ def generate_response(question):
         )
         return response['choices'][0]['text'].strip()
     except Exception as e:
-        print(f"❌ Error: {e}")
+        st.error(f"❌ Error: {e}")
         return "Sorry, I had trouble answering that."
 
 # === ROLE SELECT ===
 def choose_role():
     global current_role
-    print("\n🎭 Choose a character (parent, sibling, teacher, scientist, friend, normal):")
-    selected = input("Your choice: ").strip().lower()
-    if selected in characters:
-        current_role = selected
-        speak(f"Okay, I will now answer as a {selected}.")
-    else:
-        speak("Character not recognized. Using normal mode.")
-        current_role = "normal"
+    selected = st.selectbox("🎭 Choose a character:", list(characters.keys()))
+    current_role = selected
+    speak(f"Okay, I will now answer as a {selected}.")
 
 # === INPUT MODE SELECT ===
 def choose_input_mode():
     global input_mode
-    print("\n🧠 Choose input mode (voice / text):")
-    selected = input("Your choice: ").strip().lower()
-    if selected in ["voice", "text"]:
-        input_mode = selected
-        speak(f"Input mode set to {input_mode}.")
-    else:
-        speak("Invalid mode. Sticking with text.")
+    selected = st.radio("🧠 Choose input mode:", ["text", "voice"])
+    input_mode = selected
+    speak(f"Input mode set to {input_mode}.")
 
-# === MAIN LOOP ===
-print("\n🧠 Welcome! You can ask questions and change roles or input modes anytime.")
+# === STREAMLIT APP ===
+st.title("🧠 AI Chat with Roles")
+st.write("Ask questions, change roles, or switch input modes.")
+
 choose_input_mode()
-speak("Hello! Ask anything or type 'role' to change character, 'mode' to change input type, or 'quit' to exit.")
+choose_role()
 
-while True:
-    try:
-        if input_mode == "voice":
-            question = get_voice_input()
-        else:
-            question = get_text_input()
+if input_mode == "voice":
+    question = get_voice_input()
+else:
+    question = get_text_input()
 
-        if not question:
-            continue
-
-        if question.lower() == "quit":
-            speak("Goodbye! Take care.")
-            break
-        elif question.lower() == "role":
-            choose_role()
-            continue
-        elif question.lower() == "mode":
-            choose_input_mode()
-            continue
-
-        print("⚡ Generating answer...")
+if st.button("⚡ Generate Answer"):
+    if question:
+        st.write("⚡ Generating answer...")
         answer = generate_response(question)
         speak(answer)
-        print("\n💬 Ask another question or say 'role' or 'mode' or 'quit'.")
-
-    except KeyboardInterrupt:
-        print("\n🛑 Exiting...")
-        speak("See you soon!")
-        break
-    except Exception as e:
-        print(f"⚠️ Error: {e}")
-        speak("Oops, something went wrong.")
+    else:
+        st.warning("Please enter a question.")
