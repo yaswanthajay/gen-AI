@@ -2,8 +2,6 @@ import streamlit as st
 import pyttsx3
 import speech_recognition as sr
 from llama_cpp import Llama
-import tempfile
-import os
 
 # === INITIALIZATION ===
 engine = pyttsx3.init()
@@ -46,7 +44,7 @@ def speak(text):
         engine.say(text)
         engine.runAndWait()
     except:
-        st.warning("Speech output not supported in this environment.")
+        st.warning("Speech synthesis may not work in this environment.")
 
 # === GET TEXT INPUT ===
 def get_text_input():
@@ -54,7 +52,7 @@ def get_text_input():
 
 # === GET VOICE INPUT ===
 def get_voice_input():
-    st.warning("Voice input requires local microphone access and won't work on Streamlit Cloud.")
+    st.warning("Voice input is not supported on Streamlit Cloud.")
     return ""
 
 # === GENERATE RESPONSE ===
@@ -90,7 +88,7 @@ def choose_input_mode():
 
 # === STREAMLIT APP ===
 st.title("🧠 AI Chat with Roles")
-st.write("Ask questions, change roles, or switch input modes.")
+st.write("Ask questions, change roles, or switch input modes anytime.")
 
 choose_input_mode()
 choose_role()
