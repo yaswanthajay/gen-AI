@@ -2,3 +2,7 @@ pyttsx3
 SpeechRecognition
 llama-cpp-python
 pyaudio
+streamlit
+pyttsx3
+numpy
+opencv-python
