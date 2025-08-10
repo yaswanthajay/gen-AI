@@ -3,3 +3,4 @@ pyttsx3
 SpeechRecognition
 llama-cpp-python
 pyaudio
+gTTS
